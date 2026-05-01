@@ -48,12 +48,6 @@ export default function WishlistForm() {
             className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-500 transition-colors" />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-300">Tabungan Saat Ini (Rp)</label>
-          <input name="savedAmount" type="number" placeholder="0" min="0" defaultValue="0"
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-500 transition-colors" />
-        </div>
-
         <button type="submit" disabled={isLoading}
           className="w-full flex items-center justify-center gap-2 bg-pink-500 text-neutral-50 font-semibold rounded-xl px-4 py-3 hover:bg-pink-400 transition-all active:scale-[0.98] disabled:opacity-50 mt-2">
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}

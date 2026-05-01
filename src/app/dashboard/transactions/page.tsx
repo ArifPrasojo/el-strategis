@@ -9,14 +9,15 @@ export default async function TransactionsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [transactions, accounts, categories] = await Promise.all([
+  const [transactions, accounts, categories, wishlist] = await Promise.all([
     prisma.transaction.findMany({
       where: { userId: user.id },
       include: { category: true, account: true },
       orderBy: { date: 'desc' }
     }),
     prisma.account.findMany({ where: { userId: user.id }, orderBy: { name: 'asc' } }),
-    prisma.category.findMany({ where: { userId: user.id }, orderBy: { name: 'asc' } })
+    prisma.category.findMany({ where: { userId: user.id }, orderBy: { name: 'asc' } }),
+    prisma.wishlist.findMany({ where: { userId: user.id }, orderBy: { name: 'asc' } })
   ]);
 
   return (
@@ -28,7 +29,7 @@ export default async function TransactionsPage() {
 
       {/* Form on top on mobile */}
       <div className="block lg:hidden">
-        <TransactionForm accounts={accounts} categories={categories} />
+        <TransactionForm accounts={accounts} categories={categories} wishlist={wishlist} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -37,7 +38,7 @@ export default async function TransactionsPage() {
         </div>
         <div className="hidden lg:block">
           <div className="sticky top-24">
-            <TransactionForm accounts={accounts} categories={categories} />
+            <TransactionForm accounts={accounts} categories={categories} wishlist={wishlist} />
           </div>
         </div>
       </div>

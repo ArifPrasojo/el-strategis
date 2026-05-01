@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { createTransaction } from './actions';
 import { ArrowLeftRight, Plus, Loader2 } from 'lucide-react';
-import { Account, Category } from '@prisma/client';
+import { Account, Category, Wishlist } from '@prisma/client';
 
-export default function TransactionForm({ accounts, categories }: { accounts: Account[], categories: Category[] }) {
+export default function TransactionForm({ accounts, categories, wishlist = [] }: { accounts: Account[], categories: Category[], wishlist?: Wishlist[] }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState('EXPENSE');
@@ -86,15 +86,28 @@ export default function TransactionForm({ accounts, categories }: { accounts: Ac
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-300">Kategori</label>
-            <select name="categoryId"
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors appearance-none">
-              <option value="">-- Tanpa Kategori --</option>
-              {filteredCategories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-300">Kategori</label>
+              <select name="categoryId"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+                <option value="">-- Kategori --</option>
+                {filteredCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-300">Wishlist (Opsional)</label>
+              <select name="wishlistId"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-pink-500 transition-colors appearance-none">
+                <option value="">-- Pilih Wishlist --</option>
+                {wishlist.map(item => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <button type="submit" disabled={isLoading}

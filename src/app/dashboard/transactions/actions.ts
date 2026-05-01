@@ -17,6 +17,7 @@ export async function createTransaction(formData: FormData) {
   const description = formData.get('description') as string
   const accountId = formData.get('accountId') as string
   const categoryId = formData.get('categoryId') as string || null
+  const wishlistId = formData.get('wishlistId') as string || null
 
   if (!amount || amount <= 0) return { error: 'Amount must be greater than 0' }
   if (type !== 'INCOME' && type !== 'EXPENSE') return { error: 'Invalid transaction type' }
@@ -45,6 +46,7 @@ export async function createTransaction(formData: FormData) {
           description,
           accountId,
           categoryId,
+          wishlistId,
           userId: user.id
         }
       })
@@ -57,11 +59,26 @@ export async function createTransaction(formData: FormData) {
           balance: { increment: balanceChange }
         }
       })
+
+      // If linked to wishlist, update savedAmount
+      if (wishlistId) {
+        // Income adds to savings, Expense reduces it? 
+        // User said "tabungan dari wishlist diambil dari pemasukan"
+        // So INCOME should increase savedAmount.
+        const savingChange = type === 'INCOME' ? amount : -amount;
+        await tx.wishlist.update({
+          where: { id: wishlistId },
+          data: {
+            savedAmount: { increment: savingChange }
+          }
+        })
+      }
     });
     
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard/accounts')
+    revalidatePath('/dashboard/wishlist')
     return { success: true }
   } catch (error: any) {
     return { error: error.message || 'Failed to record transaction' }
@@ -90,6 +107,17 @@ export async function deleteTransaction(formData: FormData) {
         }
       })
 
+      // Revert wishlist savedAmount if linked
+      if (transactionRecord.wishlistId) {
+        const savingChange = transactionRecord.type === 'INCOME' ? -transactionRecord.amount : transactionRecord.amount;
+        await tx.wishlist.update({
+          where: { id: transactionRecord.wishlistId },
+          data: {
+            savedAmount: { increment: savingChange }
+          }
+        })
+      }
+
       // Delete the transaction
       await tx.transaction.delete({ where: { id } })
     })
@@ -97,6 +125,7 @@ export async function deleteTransaction(formData: FormData) {
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
     revalidatePath('/dashboard/accounts')
+    revalidatePath('/dashboard/wishlist')
     return { success: true }
   } catch (error: any) {
     return { error: error.message || 'Failed to delete transaction' }

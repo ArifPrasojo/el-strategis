@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { updateWishlistProgress, deleteWishlistItem } from './actions';
-import { Trash2, Heart, Loader2, Edit3, CheckCircle } from 'lucide-react';
+import { deleteWishlistItem } from './actions';
+import { Trash2, Heart, Loader2, CheckCircle } from 'lucide-react';
 import { Wishlist } from '@prisma/client';
 
 export default function WishlistList({ wishlist }: { wishlist: Wishlist[] }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [tempAmount, setTempAmount] = useState<number>(0);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus item wishlist ini?')) return;
@@ -17,14 +15,6 @@ export default function WishlistList({ wishlist }: { wishlist: Wishlist[] }) {
     formData.append('id', id);
     await deleteWishlistItem(formData);
     setDeletingId(null);
-  };
-
-  const handleUpdate = async (id: string) => {
-    setEditingId(null);
-    const formData = new FormData();
-    formData.append('id', id);
-    formData.append('savedAmount', tempAmount.toString());
-    await updateWishlistProgress(formData);
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -71,22 +61,10 @@ export default function WishlistList({ wishlist }: { wishlist: Wishlist[] }) {
 
             <div className="flex justify-between items-end">
               <div className="space-y-1">
-                <p className="text-xs text-neutral-500">Tabungan</p>
-                {editingId === item.id ? (
-                  <div className="flex items-center gap-2">
-                    <input type="number" value={tempAmount} onChange={(e) => setTempAmount(parseFloat(e.target.value))}
-                      className="w-32 bg-neutral-950 border border-neutral-700 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-pink-500" />
-                    <button onClick={() => handleUpdate(item.id)} className="text-emerald-400 hover:text-emerald-300 text-xs font-medium">Simpan</button>
-                    <button onClick={() => setEditingId(null)} className="text-neutral-500 hover:text-neutral-400 text-xs font-medium">Batal</button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-neutral-100">{fmt(item.savedAmount)}</span>
-                    <button onClick={() => { setEditingId(item.id); setTempAmount(item.savedAmount); }} className="p-1 text-neutral-500 hover:text-pink-400 transition-colors">
-                      <Edit3 className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
+                <p className="text-xs text-neutral-500">Tabungan (Otomatis)</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-neutral-100">{fmt(item.savedAmount)}</span>
+                </div>
               </div>
               <div className="text-right">
                 <p className={`text-xl font-black ${isComplete ? 'text-emerald-400' : 'text-pink-400'}`}>{percentage.toFixed(0)}%</p>
