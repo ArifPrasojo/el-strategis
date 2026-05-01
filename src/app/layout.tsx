@@ -15,6 +15,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "El Strategis – Manajemen Keuangan Pribadi",
   description: "Ekosistem keuangan pribadi yang komprehensif untuk mencatat transaksi, mengelola anggaran, dan mencapai tujuan finansial Anda.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "El Strategis",
+  },
+};
+
+export const viewport = {
+  themeColor: "#0a0a0a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
