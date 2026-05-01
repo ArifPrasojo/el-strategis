@@ -1,0 +1,109 @@
+'use client';
+
+import { useState } from 'react';
+import { createTransaction } from './actions';
+import { ArrowLeftRight, Plus, Loader2 } from 'lucide-react';
+import { Account, Category } from '@prisma/client';
+
+export default function TransactionForm({ accounts, categories }: { accounts: Account[], categories: Category[] }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [type, setType] = useState('EXPENSE');
+
+  const filteredCategories = categories.filter(c => c.type === type);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    const result = await createTransaction(formData);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      (e.target as HTMLFormElement).reset();
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+          <ArrowLeftRight className="w-5 h-5 text-blue-500" />
+        </div>
+        <h2 className="text-xl font-semibold">Catat Transaksi</h2>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>
+      )}
+
+      {accounts.length === 0 ? (
+        <div className="text-sm text-neutral-400 p-4 bg-neutral-800/50 rounded-xl text-center">
+          Anda harus membuat setidaknya satu Akun terlebih dahulu.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Type Toggle */}
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => setType('EXPENSE')}
+              className={`p-3 rounded-xl border text-sm font-medium transition-all ${type === 'EXPENSE' ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'}`}>
+              Pengeluaran
+            </button>
+            <button type="button" onClick={() => setType('INCOME')}
+              className={`p-3 rounded-xl border text-sm font-medium transition-all ${type === 'INCOME' ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500' : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'}`}>
+              Pemasukan
+            </button>
+          </div>
+          <input type="hidden" name="type" value={type} />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-300">Jumlah (Rp)</label>
+            <input name="amount" type="number" placeholder="0" min="1" required
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-300">Tanggal</label>
+            <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-300">Keterangan / Judul</label>
+            <input name="description" type="text" placeholder="Contoh: Makan Siang, Gaji Bulanan"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-300">Akun</label>
+            <select name="accountId" required
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+              {accounts.map(acc => (
+                <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-neutral-300">Kategori</label>
+            <select name="categoryId"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors appearance-none">
+              <option value="">-- Tanpa Kategori --</option>
+              {filteredCategories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <button type="submit" disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 bg-blue-500 text-neutral-50 font-semibold rounded-xl px-4 py-3 hover:bg-blue-400 transition-all active:scale-[0.98] disabled:opacity-50 mt-2">
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+            {isLoading ? 'Menyimpan...' : 'Simpan Transaksi'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
