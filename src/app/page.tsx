@@ -1,10 +1,23 @@
 import Link from 'next/link';
-import { ArrowRight, Wallet, PieChart, Activity, Shield } from 'lucide-react';
+import { ArrowRight, Wallet, PieChart, Activity, Shield, MessageSquare, Quote } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
+import FeedbackButton from './FeedbackButton';
+import prisma from '@/lib/prisma';
 
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Ambil 6 masukan terbaru untuk ditampilkan
+  const feedbacks = await prisma.feedback.findMany({
+    take: 6,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: {
+        select: { name: true }
+      }
+    }
+  });
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-emerald-500/30">
@@ -14,7 +27,10 @@ export default async function Home() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
             <Wallet className="w-5 h-5 text-neutral-950" />
           </div>
-          <span className="text-xl font-bold tracking-tight">El Strategis</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight">El Strategis</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">Demo</span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           {!user ? (
@@ -86,7 +102,40 @@ export default async function Home() {
             ))}
           </div>
         </div>
+
+        {/* Feedback / Testimonials Section */}
+        {feedbacks.length > 0 && (
+          <div className="max-w-6xl mx-auto px-6 py-12 mb-24 border-t border-neutral-800">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Masukan & Saran Pengguna</h2>
+              <p className="text-neutral-400 max-w-2xl mx-auto">Mendengarkan suara pengguna untuk menjadikan El Strategis lebih baik setiap harinya.</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {feedbacks.map((fb) => (
+                <div key={fb.id} className="p-6 rounded-2xl bg-neutral-900/40 border border-neutral-800/50 relative">
+                  <Quote className="w-8 h-8 text-neutral-800 absolute top-4 right-4" />
+                  <p className="text-neutral-300 mb-6 relative z-10 leading-relaxed">
+                    "{fb.message}"
+                  </p>
+                  <div className="flex items-center gap-3 mt-auto">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold uppercase">
+                      {fb.user.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-neutral-200">{fb.user.name}</p>
+                      <p className="text-xs text-neutral-500">{new Date(fb.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Floating Feedback Component - Render only if user is logged in */}
+      {user && <FeedbackButton />}
     </div>
   );
 }
