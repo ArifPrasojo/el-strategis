@@ -2,8 +2,6 @@
 
 Ekosistem manajemen keuangan pribadi (Personal Finance Management) yang dirancang untuk membantu Anda mencatat transaksi harian, mengelola anggaran, dan mencapai tujuan finansial (Wishlist) dengan antarmuka yang modern dan wawasan yang sangat jernih.
 
-![El Strategis Dashboard](https://via.placeholder.com/1200x630.png?text=El+Strategis+Dashboard)
-
 ## ✨ Fitur Utama
 
 - **📊 Pencatatan Transaksi:** Catat seluruh pemasukan dan pengeluaran harian Anda dengan mudah. Setiap transaksi dapat dihubungkan ke Akun, Kategori, dan Wishlist tertentu.
