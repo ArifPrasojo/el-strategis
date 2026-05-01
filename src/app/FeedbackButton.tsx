@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, X, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, CheckCircle2, LogIn } from 'lucide-react';
 import { submitFeedback } from './page-actions';
+import Link from 'next/link';
 
-export default function FeedbackButton() {
+interface FeedbackButtonProps {
+  isLoggedIn: boolean;
+}
+
+export default function FeedbackButton({ isLoggedIn }: FeedbackButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -44,7 +49,7 @@ export default function FeedbackButton() {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-xl font-semibold flex items-center gap-2 text-neutral-100">
                 <MessageSquare className="w-5 h-5 text-emerald-400" />
@@ -58,13 +63,48 @@ export default function FeedbackButton() {
               </button>
             </div>
 
-            {status === 'success' ? (
+            {/* Guest View - Not logged in */}
+            {!isLoggedIn && (
+              <div className="py-6 text-center flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <LogIn className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-medium text-white mb-2">Login untuk Memberi Masukan</h4>
+                  <p className="text-neutral-400 text-sm leading-relaxed">
+                    Masukan Anda sangat berharga bagi kami! Silakan login atau daftar terlebih dahulu agar kami tahu siapa Anda.
+                  </p>
+                </div>
+                <div className="flex gap-3 w-full mt-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="flex-1 text-center py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-medium transition-colors"
+                  >
+                    Masuk
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="flex-1 text-center py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-medium border border-neutral-700 transition-colors"
+                  >
+                    Daftar
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Logged in - success state */}
+            {isLoggedIn && status === 'success' && (
               <div className="py-8 text-center flex flex-col items-center">
-                <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-4 animate-in zoom-in" />
+                <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-4" />
                 <h4 className="text-xl font-medium text-white mb-2">Terima Kasih!</h4>
                 <p className="text-neutral-400">Masukan Anda telah berhasil dikirim dan akan sangat membantu kami.</p>
               </div>
-            ) : (
+            )}
+
+            {/* Logged in - form state */}
+            {isLoggedIn && status !== 'success' && (
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-neutral-400 mb-2">

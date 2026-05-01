@@ -134,8 +134,8 @@ export default async function Home() {
         )}
       </main>
 
-      {/* Floating Feedback Component - Render only if user is logged in */}
-      {user && <FeedbackButton />}
+      {/* Floating Feedback Component - always visible */}
+      <FeedbackButton isLoggedIn={!!user} />
     </div>
   );
 }
