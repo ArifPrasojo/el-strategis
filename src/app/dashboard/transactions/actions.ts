@@ -131,3 +131,83 @@ export async function deleteTransaction(formData: FormData) {
     return { error: error.message || 'Failed to delete transaction' }
   }
 }
+
+export async function updateTransaction(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized' }
+
+  const id = formData.get('id') as string
+  const amountStr = formData.get('amount') as string
+  const amount = parseFloat(amountStr)
+  const type = formData.get('type') as string
+  const dateStr = formData.get('date') as string
+  const description = formData.get('description') as string
+  const accountId = formData.get('accountId') as string
+  const categoryId = formData.get('categoryId') as string || null
+  const wishlistId = formData.get('wishlistId') as string || null
+
+  if (!id || !amount || amount <= 0) return { error: 'Invalid ID or Amount' }
+  if (type !== 'INCOME' && type !== 'EXPENSE') return { error: 'Invalid transaction type' }
+  if (!dateStr || !accountId) return { error: 'Date and Account are required' }
+
+  try {
+    const oldTx = await prisma.transaction.findUnique({ where: { id } })
+    if (!oldTx || oldTx.userId !== user.id) return { error: 'Unauthorized' }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Revert old transaction impact
+      const revertBalanceChange = oldTx.type === 'INCOME' ? -oldTx.amount : oldTx.amount;
+      await tx.account.update({
+        where: { id: oldTx.accountId },
+        data: { balance: { increment: revertBalanceChange } }
+      });
+
+      if (oldTx.wishlistId) {
+        const revertSavingChange = oldTx.type === 'INCOME' ? -oldTx.amount : oldTx.amount;
+        await tx.wishlist.update({
+          where: { id: oldTx.wishlistId },
+          data: { savedAmount: { increment: revertSavingChange } }
+        });
+      }
+
+      // 2. Apply new transaction impact
+      const newBalanceChange = type === 'INCOME' ? amount : -amount;
+      await tx.account.update({
+        where: { id: accountId },
+        data: { balance: { increment: newBalanceChange } }
+      });
+
+      if (wishlistId) {
+        const newSavingChange = type === 'INCOME' ? amount : -amount;
+        await tx.wishlist.update({
+          where: { id: wishlistId },
+          data: { savedAmount: { increment: newSavingChange } }
+        });
+      }
+
+      // 3. Update the transaction record
+      await tx.transaction.update({
+        where: { id },
+        data: {
+          amount,
+          type,
+          date: new Date(dateStr),
+          description,
+          accountId,
+          categoryId,
+          wishlistId
+        }
+      });
+    });
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/transactions')
+    revalidatePath('/dashboard/accounts')
+    revalidatePath('/dashboard/wishlist')
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || 'Failed to update transaction' }
+  }
+}

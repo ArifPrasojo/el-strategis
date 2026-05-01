@@ -66,3 +66,36 @@ export async function deleteCategory(formData: FormData) {
     return { error: error.message || 'Failed to delete category' }
   }
 }
+
+export async function updateCategory(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized' }
+
+  const id = formData.get('id') as string
+  const name = formData.get('name') as string
+  const type = formData.get('type') as string
+
+  if (!id || !name || name.trim() === '') {
+    return { error: 'Category ID and name are required' }
+  }
+  if (type !== 'INCOME' && type !== 'EXPENSE') {
+    return { error: 'Invalid category type' }
+  }
+
+  try {
+    const category = await prisma.category.findUnique({ where: { id } })
+    if (!category || category.userId !== user.id) return { error: 'Unauthorized' }
+
+    await prisma.category.update({
+      where: { id },
+      data: { name: name.trim(), type }
+    })
+    
+    revalidatePath('/dashboard/categories')
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || 'Failed to update category' }
+  }
+}

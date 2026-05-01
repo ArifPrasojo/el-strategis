@@ -70,3 +70,39 @@ export async function deleteBudget(formData: FormData) {
     return { error: error.message || 'Failed to delete budget' }
   }
 }
+
+export async function updateBudget(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized' }
+
+  const id = formData.get('id') as string
+  const amountStr = formData.get('amount') as string
+  const amount = parseFloat(amountStr)
+  const startDateStr = formData.get('startDate') as string
+  const endDateStr = formData.get('endDate') as string
+
+  if (!id || !amount || amount <= 0) return { error: 'Budget ID and valid amount are required' }
+  if (!startDateStr || !endDateStr) return { error: 'Dates are required' }
+
+  try {
+    const budget = await prisma.budget.findUnique({ where: { id } })
+    if (!budget || budget.userId !== user.id) return { error: 'Unauthorized' }
+
+    await prisma.budget.update({
+      where: { id },
+      data: {
+        amount,
+        startDate: new Date(startDateStr),
+        endDate: new Date(endDateStr)
+      }
+    })
+    
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/budgets')
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || 'Failed to update budget' }
+  }
+}

@@ -89,3 +89,35 @@ export async function deleteAccount(formData: FormData) {
     return { error: error.message || 'Failed to delete account' }
   }
 }
+
+export async function updateAccount(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized' }
+
+  const id = formData.get('id') as string
+  const name = formData.get('name') as string
+  const balanceStr = formData.get('balance') as string
+  const balance = parseFloat(balanceStr) || 0
+
+  if (!id || !name || name.trim() === '') {
+    return { error: 'Account ID and name are required' }
+  }
+
+  try {
+    const account = await prisma.account.findUnique({ where: { id } })
+    if (!account || account.userId !== user.id) return { error: 'Unauthorized' }
+
+    await prisma.account.update({
+      where: { id },
+      data: { name: name.trim(), balance }
+    })
+    
+    revalidatePath('/dashboard/accounts')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || 'Failed to update account' }
+  }
+}

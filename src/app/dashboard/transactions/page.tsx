@@ -34,7 +34,7 @@ export default async function TransactionsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <TransactionList transactions={transactions} />
+          <TransactionList transactions={transactions} accounts={accounts} categories={categories} wishlist={wishlist} />
         </div>
         <div className="hidden lg:block">
           <div className="sticky top-24">
