@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { ArrowRight, Wallet, PieChart, Activity, Shield } from 'lucide-react';
+import { createClient } from '@/utils/supabase/server';
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-emerald-500/30">
       {/* Navigation */}
@@ -13,12 +17,20 @@ export default function Home() {
           <span className="text-xl font-bold tracking-tight">El Strategis</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-neutral-400 hover:text-white transition-colors">
-            Masuk
-          </Link>
-          <Link href="/dashboard" className="px-4 py-2 text-sm font-medium bg-white text-neutral-950 rounded-full hover:bg-neutral-200 transition-colors">
-            Mulai Sekarang
-          </Link>
+          {!user ? (
+            <>
+              <Link href="/login" className="text-sm font-medium text-neutral-400 hover:text-white transition-colors">
+                Masuk
+              </Link>
+              <Link href="/dashboard" className="px-4 py-2 text-sm font-medium bg-white text-neutral-950 rounded-full hover:bg-neutral-200 transition-colors">
+                Mulai Sekarang
+              </Link>
+            </>
+          ) : (
+            <Link href="/dashboard" className="px-4 py-2 text-sm font-medium bg-emerald-500 text-neutral-950 rounded-full hover:bg-emerald-400 transition-colors">
+              Ke Dashboard
+            </Link>
+          )}
         </div>
       </nav>
 
