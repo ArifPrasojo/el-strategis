@@ -7,17 +7,27 @@ import { Wallet, Plus, Loader2 } from 'lucide-react';
 export default function AccountForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [balance, setBalance] = useState('');
+
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    formData.set('balance', balance);
     const result = await createAccount(formData);
     if (result?.error) {
       setError(result.error);
     } else {
       (e.target as HTMLFormElement).reset();
+      setBalance('');
     }
     setIsLoading(false);
   };
@@ -43,9 +53,14 @@ export default function AccountForm() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-300">Saldo Awal (Rp)</label>
-          <input name="balance" type="number" placeholder="0" min="0" step="0.01"
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+          <label className="text-sm font-medium text-neutral-300">Saldo Awal</label>
+          <div className="relative">
+            <span className="absolute left-4 top-3.5 text-sm text-neutral-500 font-medium">Rp</span>
+            <input name="balance" type="text" inputMode="numeric" placeholder="0"
+              value={balance ? formatRupiah(balance) : ''}
+              onChange={(e) => setBalance(e.target.value.replace(/\D/g, ''))}
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+          </div>
         </div>
 
         <button type="submit" disabled={isLoading}

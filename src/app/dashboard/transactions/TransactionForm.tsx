@@ -17,6 +17,14 @@ export default function TransactionForm({ accounts, categories, wishlist = [] }:
 
   const filteredCategories = categories.filter(c => c.type === type);
 
+  // Helper to format number to Rp 10.000
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
+
   // Auto-calculate amount if using itemized list
   const calculatedAmount = items.reduce((sum, item) => sum + (item.price || 0), 0);
   const displayAmount = useItems ? calculatedAmount : manualAmount;
@@ -39,7 +47,7 @@ export default function TransactionForm({ accounts, categories, wishlist = [] }:
     setError(null);
     const formData = new FormData(e.currentTarget);
     
-    // Override amount if using items
+    // Override amount if using items or if manual amount has formatting
     if (useItems) {
       if (calculatedAmount <= 0) {
         setError('Total rincian barang harus lebih dari 0');
@@ -52,6 +60,8 @@ export default function TransactionForm({ accounts, categories, wishlist = [] }:
       if (cleanItems.length > 0) {
         formData.set('items', JSON.stringify(cleanItems));
       }
+    } else {
+      formData.set('amount', manualAmount);
     }
 
     const result = await createTransaction(formData);
@@ -110,11 +120,18 @@ export default function TransactionForm({ accounts, categories, wishlist = [] }:
               )}
             </div>
             
-            <input name="amount" type="number" placeholder="0" min="1" required={!useItems}
-              value={displayAmount}
-              onChange={(e) => !useItems && setManualAmount(e.target.value)}
-              readOnly={useItems}
-              className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors ${useItems ? 'bg-neutral-900 border-neutral-800 text-neutral-500 cursor-not-allowed' : 'bg-neutral-950 border-neutral-800 text-white'}`} />
+            <div className="relative">
+              <span className="absolute left-4 top-3.5 text-sm text-neutral-500 font-medium">Rp</span>
+              <input name="amount" type="text" inputMode="numeric" placeholder="0" required={!useItems}
+                value={displayAmount ? formatRupiah(displayAmount) : ''}
+                onChange={(e) => {
+                  if (!useItems) {
+                    setManualAmount(e.target.value.replace(/\D/g, ''));
+                  }
+                }}
+                readOnly={useItems}
+                className={`w-full border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors ${useItems ? 'bg-neutral-900 border-neutral-800 text-neutral-500 cursor-not-allowed' : 'bg-neutral-950 border-neutral-800 text-white'}`} />
+            </div>
           </div>
 
           {/* Itemized List */}
@@ -139,10 +156,13 @@ export default function TransactionForm({ accounts, categories, wishlist = [] }:
                       onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" required />
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-sm text-neutral-500">Rp</span>
-                      <input type="number" placeholder="Harga" value={item.price || ''}
-                        onChange={(e) => updateItem(item.id, 'price', Number(e.target.value))}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500" required min="1" />
+                      <span className="absolute left-3 top-2 text-sm text-neutral-500 font-medium">Rp</span>
+                      <input type="text" inputMode="numeric" placeholder="Harga" value={item.price ? formatRupiah(item.price) : ''}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/\D/g, '');
+                          updateItem(item.id, 'price', raw ? Number(raw) : 0);
+                        }}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500" required />
                     </div>
                   </div>
                 </div>

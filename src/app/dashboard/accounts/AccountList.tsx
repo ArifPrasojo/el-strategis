@@ -12,6 +12,13 @@ export default function AccountList({ accounts }: { accounts: Account[] }) {
   const [editBalance, setEditBalance] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus akun ini? Semua transaksi terkait juga akan dihapus.')) return;
     setDeletingId(id);
@@ -71,13 +78,17 @@ export default function AccountList({ accounts }: { accounts: Account[] }) {
                   className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
                   placeholder="Nama Akun"
                 />
-                <input
-                  type="number"
-                  value={editBalance}
-                  onChange={(e) => setEditBalance(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="Saldo"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-sm text-neutral-500 font-medium">Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={editBalance ? formatRupiah(editBalance) : ''}
+                    onChange={(e) => setEditBalance(e.target.value.replace(/\D/g, ''))}
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                    placeholder="Saldo"
+                  />
+                </div>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button onClick={() => handleUpdate(account.id)} disabled={isUpdating} className="p-3 text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-colors">

@@ -12,6 +12,13 @@ export default function WishlistList({ wishlist }: { wishlist: Wishlist[] }) {
   const [editTargetAmount, setEditTargetAmount] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus item wishlist ini?')) return;
     setDeletingId(id);
@@ -75,13 +82,17 @@ export default function WishlistList({ wishlist }: { wishlist: Wishlist[] }) {
                     className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
                     placeholder="Nama Wishlist"
                   />
-                  <input
-                    type="number"
-                    value={editTargetAmount}
-                    onChange={(e) => setEditTargetAmount(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
-                    placeholder="Target Harga"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-sm text-neutral-500 font-medium">Rp</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editTargetAmount ? formatRupiah(editTargetAmount) : ''}
+                      onChange={(e) => setEditTargetAmount(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+                      placeholder="Target Harga"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => handleUpdate(item.id)} disabled={isUpdating} className="p-2.5 bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 rounded-xl transition-colors flex-1 flex justify-center items-center">

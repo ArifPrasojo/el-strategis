@@ -15,6 +15,13 @@ export default function BudgetList({ budgets }: { budgets: BudgetWithRelations[]
   const [editEndDate, setEditEndDate] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus anggaran ini?')) return;
     setDeletingId(id);
@@ -84,12 +91,16 @@ export default function BudgetList({ budgets }: { budgets: BudgetWithRelations[]
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs text-neutral-400">Batas Anggaran</label>
-                    <input
-                      type="number"
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-sm text-neutral-500 font-medium">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editAmount ? formatRupiah(editAmount) : ''}
+                        onChange={(e) => setEditAmount(e.target.value.replace(/\D/g, ''))}
+                        className="w-full bg-neutral-950 border border-neutral-700 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs text-neutral-400">Tanggal Mulai</label>

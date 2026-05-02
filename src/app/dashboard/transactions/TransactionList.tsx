@@ -22,6 +22,13 @@ export default function TransactionList({ transactions, accounts, categories, wi
   const [editWishlist, setEditWishlist] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus transaksi ini? Saldo akun akan dikembalikan ke semula.')) return;
     setDeletingId(id);
@@ -93,7 +100,17 @@ export default function TransactionList({ transactions, accounts, categories, wi
                       <option value="EXPENSE">Pengeluaran</option>
                       <option value="INCOME">Pemasukan</option>
                     </select>
-                    <input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} placeholder="Jumlah" className="bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-sm text-neutral-500 font-medium">Rp</span>
+                      <input 
+                        type="text" 
+                        inputMode="numeric" 
+                        value={editAmount ? formatRupiah(editAmount) : ''} 
+                        onChange={(e) => setEditAmount(e.target.value.replace(/\D/g, ''))} 
+                        placeholder="Jumlah" 
+                        className="w-full bg-neutral-950 border border-neutral-700 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500" 
+                      />
+                    </div>
                     <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                     <input type="text" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Keterangan" className="bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                   </div>

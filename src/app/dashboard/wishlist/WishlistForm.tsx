@@ -7,17 +7,27 @@ import { Heart, Plus, Loader2 } from 'lucide-react';
 export default function WishlistForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [targetAmount, setTargetAmount] = useState('');
+
+  const formatRupiah = (value: string | number) => {
+    if (!value) return '';
+    const numberString = value.toString().replace(/\D/g, '');
+    if (!numberString) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(numberString));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    formData.set('targetAmount', targetAmount);
     const result = await createWishlistItem(formData);
     if (result?.error) {
       setError(result.error);
     } else {
       (e.target as HTMLFormElement).reset();
+      setTargetAmount('');
     }
     setIsLoading(false);
   };
@@ -43,9 +53,14 @@ export default function WishlistForm() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-300">Target Harga (Rp)</label>
-          <input name="targetAmount" type="number" placeholder="0" min="1" required
-            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-500 transition-colors" />
+          <label className="text-sm font-medium text-neutral-300">Target Harga</label>
+          <div className="relative">
+            <span className="absolute left-4 top-3.5 text-sm text-neutral-500 font-medium">Rp</span>
+            <input name="targetAmount" type="text" inputMode="numeric" placeholder="0" required
+              value={targetAmount ? formatRupiah(targetAmount) : ''}
+              onChange={(e) => setTargetAmount(e.target.value.replace(/\D/g, ''))}
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-pink-500 transition-colors" />
+          </div>
         </div>
 
         <button type="submit" disabled={isLoading}
