@@ -4,17 +4,25 @@ import { useState } from 'react';
 import { login, signup } from './actions';
 import { Wallet, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!captchaToken) {
+      setError('Silakan verifikasi bahwa Anda bukan robot (reCAPTCHA).');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    formData.append('captchaToken', captchaToken);
     const result = isLogin ? await login(formData) : await signup(formData);
     if (result?.error) {
       setError(result.error);
@@ -67,7 +75,15 @@ export default function LoginPage() {
               className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
           </div>
 
-          <button type="submit" disabled={isLoading}
+          <div className="flex justify-center py-2">
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+              onChange={(token) => setCaptchaToken(token)}
+              theme="dark"
+            />
+          </div>
+
+          <button type="submit" disabled={isLoading || !captchaToken}
             className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-neutral-950 font-semibold rounded-xl px-4 py-3 mt-2 hover:bg-emerald-400 transition-colors disabled:opacity-50">
             {isLoading ? 'Memproses...' : (isLogin ? 'Masuk' : 'Daftar')}
             {!isLoading && <ArrowRight className="w-4 h-4" />}
