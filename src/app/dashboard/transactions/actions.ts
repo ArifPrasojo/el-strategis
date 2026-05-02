@@ -18,6 +18,14 @@ export async function createTransaction(formData: FormData) {
   const accountId = formData.get('accountId') as string
   const categoryId = formData.get('categoryId') as string || null
   const wishlistId = formData.get('wishlistId') as string || null
+  const itemsStr = formData.get('items') as string || null
+
+  let itemsJson = null
+  if (itemsStr) {
+    try {
+      itemsJson = JSON.parse(itemsStr)
+    } catch(e) {}
+  }
 
   if (!amount || amount <= 0) return { error: 'Amount must be greater than 0' }
   if (type !== 'INCOME' && type !== 'EXPENSE') return { error: 'Invalid transaction type' }
@@ -47,7 +55,8 @@ export async function createTransaction(formData: FormData) {
           accountId,
           categoryId,
           wishlistId,
-          userId: user.id
+          userId: user.id,
+          items: itemsJson
         }
       })
 
@@ -147,6 +156,14 @@ export async function updateTransaction(formData: FormData) {
   const accountId = formData.get('accountId') as string
   const categoryId = formData.get('categoryId') as string || null
   const wishlistId = formData.get('wishlistId') as string || null
+  const itemsStr = formData.get('items') as string || null
+
+  let itemsJson = null
+  if (itemsStr) {
+    try {
+      itemsJson = JSON.parse(itemsStr)
+    } catch(e) {}
+  }
 
   if (!id || !amount || amount <= 0) return { error: 'Invalid ID or Amount' }
   if (type !== 'INCOME' && type !== 'EXPENSE') return { error: 'Invalid transaction type' }
@@ -197,7 +214,8 @@ export async function updateTransaction(formData: FormData) {
           description,
           accountId,
           categoryId,
-          wishlistId
+          wishlistId,
+          items: itemsJson !== null ? itemsJson : oldTx.items
         }
       });
     });

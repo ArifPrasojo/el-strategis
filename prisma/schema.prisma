@@ -66,6 +66,7 @@ model Transaction {
   categoryId  String?
   wishlistId  String?
   userId      String
+  items       Json?    // Untuk menyimpan detail barang belanja (nama, harga)
   
   account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
