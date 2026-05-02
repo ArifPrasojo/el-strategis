@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createTransaction } from './actions';
 import { ArrowLeftRight, Plus, Loader2, ListPlus, Trash2 } from 'lucide-react';
 import { Account, Category, Wishlist } from '@prisma/client';
