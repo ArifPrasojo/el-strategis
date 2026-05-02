@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import TransactionForm from './TransactionForm';
 import TransactionList from './TransactionList';
+import ReceiptScanner from './ReceiptScanner';
 
 export default async function TransactionsPage() {
   const supabase = await createClient();
@@ -22,9 +23,12 @@ export default async function TransactionsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Transaksi</h1>
-        <p className="text-sm text-neutral-400">Catat dan tinjau pemasukan serta pengeluaran harian Anda.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Transaksi</h1>
+          <p className="text-sm text-neutral-400">Catat dan tinjau pemasukan serta pengeluaran harian Anda.</p>
+        </div>
+        <ReceiptScanner />
       </div>
 
       {/* Form on top on mobile */}

@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
   turbopack: {},
   // @ts-ignore - Some TS types might not be updated for this top-level field yet
   allowedDevOrigins: ['10.243.79.102', 'localhost:3000'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    }
+  }
 };
 
 export default withPWA(nextConfig);
