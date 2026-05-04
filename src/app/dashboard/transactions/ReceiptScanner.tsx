@@ -34,7 +34,7 @@ export default function ReceiptScanner() {
               <div>
                 <h3 className="text-xl font-bold text-white mb-2">Coming Soon</h3>
                 <p className="text-sm text-neutral-400 leading-relaxed italic">
-                  "Maaf masih coming soon. Implementasi Model AI sialan mahal njir kalau yg detail"
+                  "Coming Soon ya ges ya"
                 </p>
               </div>
 

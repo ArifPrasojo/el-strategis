@@ -37,10 +37,10 @@ export default async function ReportsPage({
   const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0, 23, 59, 59);
   const daysInMonth = endOfMonth.getDate();
 
-  // Fetch ALL transactions for the monthly history table (just amount, type, date)
+  // Fetch ALL transactions for the monthly history table and current month details
   const allTransactions = await prisma.transaction.findMany({
     where: { userId: user.id },
-    select: { amount: true, type: true, date: true, category: { select: { name: true } } },
+    include: { category: true, account: true },
     orderBy: { date: 'desc' }
   });
 
@@ -60,15 +60,7 @@ export default async function ReportsPage({
   const totalExpenses = currentMonthTx.filter(t => t.type === 'EXPENSE').reduce((a, t) => a + t.amount, 0);
   const netSavings = totalIncome - totalExpenses;
 
-  // Category Breakdown
-  const expenseByCategory = currentMonthTx
-    .filter(t => t.type === 'EXPENSE' && t.category)
-    .reduce((acc, t) => { acc[t.category!.name] = (acc[t.category!.name] || 0) + t.amount; return acc; }, {} as Record<string, number>);
-
-  const categoryBreakdown = Object.entries(expenseByCategory)
-    .map(([name, amount]) => ({ name, amount, pct: totalExpenses ? (amount / totalExpenses) * 100 : 0 }))
-    .sort((a, b) => b.amount - a.amount);
-
+  // Category Breakdown removed per user request
   // Monthly History Grouping
   const monthlyHistoryObj = allTransactions.reduce((acc, t) => {
     const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`;
@@ -83,6 +75,21 @@ export default async function ReportsPage({
   const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
   const maxBarValue = Math.max(...dailyData.map(d => Math.max(d.income, d.expense)), 1);
   const COLORS = ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500'];
+
+  const chartWidth = 800;
+  const chartHeight = 144;
+  
+  const incomePoints = dailyData.map((d, i) => {
+    const x = (i / (daysInMonth - 1)) * chartWidth;
+    const y = maxBarValue === 0 ? chartHeight : chartHeight - (d.income / maxBarValue) * chartHeight;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const expensePoints = dailyData.map((d, i) => {
+    const x = (i / (daysInMonth - 1)) * chartWidth;
+    const y = maxBarValue === 0 ? chartHeight : chartHeight - (d.expense / maxBarValue) * chartHeight;
+    return `${x},${y}`;
+  }).join(' ');
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -130,33 +137,47 @@ export default async function ReportsPage({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      <div className="w-full">
         {/* Daily Bar Chart (Scrollable) */}
         <div className="p-4 md:p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800 flex flex-col">
           <h2 className="text-base md:text-lg font-semibold mb-4">Grafik Harian ({selectedMonthLabel})</h2>
           
-          <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-            <div className="flex items-end gap-1.5 h-48 min-w-[600px] px-2 pt-10">
-              {dailyData.map((d) => (
-                <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  {/* Tooltip */}
-                  <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-800 text-xs p-2 rounded-lg pointer-events-none whitespace-nowrap z-10 shadow-xl border border-neutral-700">
-                    <div className="font-bold mb-1">Tgl {d.day}</div>
-                    <div className="text-emerald-400">In: {fmt(d.income)}</div>
-                    <div className="text-red-400">Out: {fmt(d.expense)}</div>
-                  </div>
-                  
-                  <div className="flex items-end gap-[1px] w-full h-36 bg-neutral-950/30 rounded-t-sm">
-                    <div className="flex-1 flex items-end justify-center">
-                      <div className="w-full max-w-[12px] bg-emerald-500/70 rounded-t-sm transition-all duration-300 hover:bg-emerald-400" style={{ height: `${(d.income / maxBarValue) * 100}%`, minHeight: d.income > 0 ? '4px' : '0' }} />
+          <div className="flex-1 overflow-x-auto pb-6 custom-scrollbar">
+            <div className="relative h-36 min-w-[600px] mt-10">
+              <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" className="w-full h-full overflow-visible pointer-events-none">
+                <polyline fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={incomePoints} />
+                <polyline fill="none" stroke="#f87171" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={expensePoints} />
+                {/* Draw dots for income */}
+                {dailyData.map((d, i) => {
+                  if (d.income === 0) return null;
+                  const x = (i / (daysInMonth - 1)) * chartWidth;
+                  const y = chartHeight - (d.income / maxBarValue) * chartHeight;
+                  return <circle key={`in-${i}`} cx={x} cy={y} r="4" fill="#171717" stroke="#34d399" strokeWidth="2" />;
+                })}
+                {/* Draw dots for expense */}
+                {dailyData.map((d, i) => {
+                  if (d.expense === 0) return null;
+                  const x = (i / (daysInMonth - 1)) * chartWidth;
+                  const y = chartHeight - (d.expense / maxBarValue) * chartHeight;
+                  return <circle key={`out-${i}`} cx={x} cy={y} r="4" fill="#171717" stroke="#f87171" strokeWidth="2" />;
+                })}
+              </svg>
+
+              <div className="absolute inset-0 flex justify-between">
+                {dailyData.map((d) => (
+                  <div key={d.day} className="flex-1 h-full flex flex-col items-center group relative cursor-crosshair">
+                    <div className="w-full h-full border-r border-dashed border-neutral-800/0 group-hover:border-neutral-600/50 transition-colors" />
+                    
+                    <div className="absolute top-0 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-800 text-xs p-2 rounded-lg pointer-events-none whitespace-nowrap z-10 shadow-xl border border-neutral-700">
+                      <div className="font-bold mb-1">Tgl {d.day}</div>
+                      <div className="text-emerald-400">In: {fmt(d.income)}</div>
+                      <div className="text-red-400">Out: {fmt(d.expense)}</div>
                     </div>
-                    <div className="flex-1 flex items-end justify-center">
-                      <div className="w-full max-w-[12px] bg-red-500/70 rounded-t-sm transition-all duration-300 hover:bg-red-400" style={{ height: `${(d.expense / maxBarValue) * 100}%`, minHeight: d.expense > 0 ? '4px' : '0' }} />
-                    </div>
+                    
+                    <span className="absolute -bottom-5 text-[10px] text-neutral-500 group-hover:text-neutral-300 transition-colors">{d.day}</span>
                   </div>
-                  <span className="text-[10px] text-neutral-500">{d.day}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-4 mt-3 text-xs text-neutral-400 border-t border-neutral-800 pt-3">
@@ -166,75 +187,80 @@ export default async function ReportsPage({
           </div>
         </div>
 
-        {/* Category Breakdown */}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* Monthly History Table */}
         <div className="p-4 md:p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-          <h2 className="text-base md:text-lg font-semibold mb-4">Rincian Pengeluaran</h2>
-          {categoryBreakdown.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-neutral-500">
-              <BarChart3 className="w-10 h-10 mb-3 opacity-40" />
-              <p className="text-sm">Belum ada pengeluaran bulan ini</p>
-            </div>
+          <h2 className="text-base md:text-lg font-semibold mb-4">Riwayat Setiap Bulan</h2>
+          {monthlyHistory.length === 0 ? (
+             <p className="text-sm text-neutral-500 text-center py-6">Belum ada data riwayat bulan sebelumnya.</p>
           ) : (
-            <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-              {categoryBreakdown.map((cat, i) => (
-                <div key={cat.name} className="space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-neutral-300 truncate">{cat.name}</span>
-                    <span className="text-neutral-400 shrink-0 ml-2">{cat.pct.toFixed(0)}%</span>
+            <div className="overflow-x-auto -mx-2">
+              <table className="w-full text-sm min-w-[450px]">
+                <thead>
+                  <tr className="text-left text-neutral-500 border-b border-neutral-800">
+                    <th className="pb-3 px-4 font-medium">Bulan</th>
+                    <th className="pb-3 px-4 font-medium text-right">Tabungan Bersih</th>
+                    <th className="pb-3 px-4 font-medium text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800/50">
+                  {monthlyHistory.map((row) => {
+                    const net = row.income - row.expense;
+                    const isRowSelected = row.key === monthParam || (isCurrentMonth && row.key === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+                    
+                    return (
+                      <tr key={row.key} className={`hover:bg-neutral-800/30 transition-colors ${isRowSelected ? 'bg-neutral-800/20' : ''}`}>
+                        <td className="py-4 px-4 text-neutral-300 font-medium">
+                          {row.label}
+                          {isRowSelected && <span className="ml-2 text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Aktif</span>}
+                        </td>
+                        <td className={`py-4 px-4 text-right font-medium ${net >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{fmt(net)}</td>
+                        <td className="py-4 px-4 text-center">
+                          <Link href={`/dashboard/reports?month=${row.key}`} className="text-xs px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors inline-block">
+                            Lihat Laporan
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Transactions of the Selected Month */}
+        <div className="p-4 md:p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800 flex flex-col">
+          <h2 className="text-base md:text-lg font-semibold mb-4">Daftar Transaksi ({selectedMonthLabel})</h2>
+          {currentMonthTx.length === 0 ? (
+            <p className="text-sm text-neutral-500 text-center py-6">Tidak ada transaksi di bulan ini.</p>
+          ) : (
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+              {currentMonthTx.map((tx) => (
+                <div key={tx.id} className="p-4 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${tx.type === 'INCOME' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                      {tx.type === 'INCOME' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-neutral-200 truncate">
+                        {tx.description || tx.category?.name || 'Tanpa Kategori'}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {tx.account.name}
+                      </p>
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-neutral-800 rounded-full overflow-hidden">
-                    <div className={`h-full ${COLORS[i % COLORS.length]} rounded-full`} style={{ width: `${cat.pct}%` }} />
+                  <div className={`text-sm font-bold shrink-0 ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-neutral-200'}`}>
+                    {tx.type === 'INCOME' ? '+' : '-'}{fmt(tx.amount)}
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
-
-      {/* Monthly History Table */}
-      <div className="p-4 md:p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-        <h2 className="text-base md:text-lg font-semibold mb-4">Riwayat Setiap Bulan</h2>
-        {monthlyHistory.length === 0 ? (
-           <p className="text-sm text-neutral-500 text-center py-6">Belum ada data riwayat bulan sebelumnya.</p>
-        ) : (
-          <div className="overflow-x-auto -mx-2">
-            <table className="w-full text-sm min-w-[500px]">
-              <thead>
-                <tr className="text-left text-neutral-500 border-b border-neutral-800">
-                  <th className="pb-3 px-4 font-medium">Bulan</th>
-                  <th className="pb-3 px-4 font-medium text-right">Pemasukan</th>
-                  <th className="pb-3 px-4 font-medium text-right">Pengeluaran</th>
-                  <th className="pb-3 px-4 font-medium text-right">Tabungan Bersih</th>
-                  <th className="pb-3 px-4 font-medium text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800/50">
-                {monthlyHistory.map((row) => {
-                  const net = row.income - row.expense;
-                  const isRowSelected = row.key === monthParam || (isCurrentMonth && row.key === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-                  
-                  return (
-                    <tr key={row.key} className={`hover:bg-neutral-800/30 transition-colors ${isRowSelected ? 'bg-neutral-800/20' : ''}`}>
-                      <td className="py-4 px-4 text-neutral-300 font-medium">
-                        {row.label}
-                        {isRowSelected && <span className="ml-2 text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Aktif</span>}
-                      </td>
-                      <td className="py-4 px-4 text-right text-emerald-400">{fmt(row.income)}</td>
-                      <td className="py-4 px-4 text-right text-neutral-300">{fmt(row.expense)}</td>
-                      <td className={`py-4 px-4 text-right font-medium ${net >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{fmt(net)}</td>
-                      <td className="py-4 px-4 text-center">
-                        <Link href={`/dashboard/reports?month=${row.key}`} className="text-xs px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors inline-block">
-                          Lihat Laporan
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
